@@ -1,7 +1,5 @@
-package com.bankguard.riskengine.config;
+package com.bankguard.masterdata.config;
 
-import com.bankguard.common.event.EventEnvelopeFactory;
-import java.time.Clock;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
@@ -10,17 +8,7 @@ import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSeriali
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 @Configuration
-public class RiskEngineConfig {
-
-    @Bean
-    Clock clock() {
-        return Clock.systemUTC();
-    }
-
-    @Bean
-    EventEnvelopeFactory eventEnvelopeFactory() {
-        return EventEnvelopeFactory.system();
-    }
+public class MasterDataConfig {
 
     @Bean
     RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connectionFactory) {

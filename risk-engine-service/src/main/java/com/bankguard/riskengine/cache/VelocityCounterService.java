@@ -1,6 +1,6 @@
 package com.bankguard.riskengine.cache;
 
-import com.bankguard.common.constant.RedisKeys;
+import com.bankguard.common.redis.RedisKeyBuilder;
 import java.math.BigDecimal;
 import java.time.Duration;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -17,18 +17,19 @@ public class VelocityCounterService {
     }
 
     public VelocitySnapshot incrementAndGet(String sourceAccountNumber, BigDecimal amount) {
-        String countKey = RedisKeys.VELOCITY_COUNT_PREFIX + ":" + sourceAccountNumber + ":10m";
-        String amountKey = RedisKeys.VELOCITY_AMOUNT_PREFIX + ":" + sourceAccountNumber + ":10m";
+        String countKey = RedisKeyBuilder.velocityCount(sourceAccountNumber);
+        String amountKey = RedisKeyBuilder.velocityAmount(sourceAccountNumber);
         try {
             Long count = redisTemplate.opsForValue().increment(countKey);
-            Long amountTotal = redisTemplate.opsForValue().increment(amountKey, amount.longValue());
+            double amountIncrement = amount.doubleValue();
+            Double amountTotal = redisTemplate.opsForValue().increment(amountKey, amountIncrement);
             if (count != null && count == 1L) {
                 redisTemplate.expire(countKey, WINDOW_TTL);
             }
-            if (amountTotal != null && amountTotal.equals(amount.longValue())) {
+            if (amountTotal != null && BigDecimal.valueOf(amountTotal).compareTo(BigDecimal.valueOf(amountIncrement)) == 0) {
                 redisTemplate.expire(amountKey, WINDOW_TTL);
             }
-            return new VelocitySnapshot(count == null ? 0 : count, BigDecimal.valueOf(amountTotal == null ? 0 : amountTotal));
+            return new VelocitySnapshot(count == null ? 0 : count, amountTotal == null ? BigDecimal.ZERO : BigDecimal.valueOf(amountTotal));
         } catch (RuntimeException ex) {
             return new VelocitySnapshot(0, BigDecimal.ZERO);
         }

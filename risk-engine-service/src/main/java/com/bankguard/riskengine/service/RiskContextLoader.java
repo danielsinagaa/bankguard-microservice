@@ -1,8 +1,8 @@
 package com.bankguard.riskengine.service;
 
 import com.bankguard.common.constant.ErrorCode;
-import com.bankguard.common.constant.RedisKeys;
 import com.bankguard.common.exception.ApiException;
+import com.bankguard.common.redis.RedisKeyBuilder;
 import com.bankguard.riskengine.cache.VelocityCounterService;
 import com.bankguard.riskengine.cache.VelocitySnapshot;
 import com.bankguard.riskengine.dto.RuleConfig;
@@ -32,6 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class RiskContextLoader {
     private static final Duration BLACKLIST_TTL = Duration.ofMinutes(10);
+    private static final Duration BLACKLIST_NEGATIVE_TTL = Duration.ofMinutes(1);
     private static final Duration RISK_PROFILE_TTL = Duration.ofMinutes(5);
     private static final Duration TRUSTED_DEVICE_TTL = Duration.ofMinutes(10);
     private static final Duration RULE_CONFIG_TTL = Duration.ofMinutes(5);
@@ -107,7 +108,7 @@ public class RiskContextLoader {
     }
 
     private String loadRiskLevel(Long customerId) {
-        String key = RedisKeys.CUSTOMER_RISK_PROFILE_PREFIX + ":" + customerId;
+        String key = RedisKeyBuilder.customerRiskProfile(customerId);
         Optional<String> cachedRiskLevel = readCache(key)
                 .map(value -> textValue(value.get("riskLevel")))
                 .filter(value -> !value.isBlank());
@@ -115,16 +116,15 @@ public class RiskContextLoader {
             return cachedRiskLevel.get();
         }
 
-        String riskLevel = riskProfileRepository.findByCustomerId(customerId)
-                .map(profile -> profile.getRiskLevel())
-                .orElse("LOW");
-        if (!"LOW".equals(riskLevel)) {
+        Optional<String> databaseRiskLevel = riskProfileRepository.findByCustomerId(customerId)
+                .map(profile -> profile.getRiskLevel());
+        databaseRiskLevel.ifPresent(riskLevel -> {
             writeCache(key, mapOf(
                     "customerId", customerId,
                     "riskLevel", riskLevel
             ), RISK_PROFILE_TTL);
-        }
-        return riskLevel;
+        });
+        return databaseRiskLevel.orElse("LOW");
     }
 
     private DeviceContext loadDevice(Long customerId, String deviceId) {
@@ -132,7 +132,7 @@ public class RiskContextLoader {
             return new DeviceContext(false, false);
         }
 
-        String key = RedisKeys.CUSTOMER_TRUSTED_DEVICE_PREFIX + ":" + customerId + ":" + deviceId;
+        String key = RedisKeyBuilder.trustedDevice(customerId, deviceId);
         Optional<Boolean> cachedTrusted = readCache(key)
                 .map(value -> booleanValue(value.get("trusted")));
         if (cachedTrusted.isPresent()) {
@@ -149,11 +149,16 @@ public class RiskContextLoader {
     }
 
     private boolean isBlacklisted(String accountNumber) {
-        String key = RedisKeys.BLACKLIST_ACCOUNT_PREFIX + ":" + accountNumber;
+        String key = RedisKeyBuilder.blacklistAccount(accountNumber);
         Optional<Boolean> cachedActive = readCache(key)
                 .map(value -> booleanValue(value.get("active")));
         if (cachedActive.isPresent()) {
             return cachedActive.get();
+        }
+        Optional<Boolean> negativeCacheHit = readCache(RedisKeyBuilder.blacklistAccountNegative(accountNumber))
+                .map(value -> booleanValue(value.get("active")));
+        if (negativeCacheHit.isPresent()) {
+            return false;
         }
 
         boolean active = blacklistedAccountRepository.existsByAccountNumberAndActiveTrue(accountNumber);
@@ -162,6 +167,11 @@ public class RiskContextLoader {
                     "accountNumber", accountNumber,
                     "active", true
             ), BLACKLIST_TTL);
+        } else {
+            writeCache(RedisKeyBuilder.blacklistAccountNegative(accountNumber), mapOf(
+                    "accountNumber", accountNumber,
+                    "active", false
+            ), BLACKLIST_NEGATIVE_TTL);
         }
         return active;
     }
@@ -182,7 +192,7 @@ public class RiskContextLoader {
     }
 
     private Optional<RuleConfig> readRuleConfig(String ruleCode) {
-        String key = RedisKeys.RISK_RULE_CONFIG_PREFIX + ":" + ruleCode;
+        String key = RedisKeyBuilder.riskRuleConfig(ruleCode);
         return readCache(key).map(value -> new RuleConfig(
                 textValue(value.get("ruleCode")),
                 intValue(value.get("score")),
@@ -192,7 +202,7 @@ public class RiskContextLoader {
     }
 
     private void cacheRuleConfig(RuleConfig config) {
-        writeCache(RedisKeys.RISK_RULE_CONFIG_PREFIX + ":" + config.ruleCode(), mapOf(
+        writeCache(RedisKeyBuilder.riskRuleConfig(config.ruleCode()), mapOf(
                 "ruleCode", config.ruleCode(),
                 "score", config.score(),
                 "thresholdValue", config.thresholdValue(),
