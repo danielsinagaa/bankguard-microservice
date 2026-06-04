@@ -107,6 +107,36 @@ class TransactionServiceSecurityIntegrationTest {
                 .andExpect(jsonPath("$.requestId").value("req-analyst-submit"));
     }
 
+    @Test
+    void shouldAllowFraudAnalystToAccessReportingApi() throws Exception {
+        String analystToken = login("analyst", "analyst123");
+
+        mockMvc.perform(get("/api/v1/reports/risk-score-distribution")
+                        .header("Authorization", "Bearer " + analystToken)
+                        .header("X-Request-Id", "req-report-analyst")
+                        .param("startDate", "2026-06-01")
+                        .param("endDate", "2026-06-04"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].riskBucket").value("LOW"))
+                .andExpect(jsonPath("$.data[1].riskBucket").value("MEDIUM"))
+                .andExpect(jsonPath("$.data[2].riskBucket").value("HIGH"))
+                .andExpect(jsonPath("$.total").value(3));
+    }
+
+    @Test
+    void shouldRejectBackofficeAccessToReportingApi() throws Exception {
+        String backofficeToken = login("backoffice", "backoffice123");
+
+        mockMvc.perform(get("/api/v1/reports/risk-score-distribution")
+                        .header("Authorization", "Bearer " + backofficeToken)
+                        .header("X-Request-Id", "req-report-backoffice")
+                        .param("startDate", "2026-06-01")
+                        .param("endDate", "2026-06-04"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error").value("FORBIDDEN"))
+                .andExpect(jsonPath("$.requestId").value("req-report-backoffice"));
+    }
+
     private String login(String username, String password) throws Exception {
         String response = mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
