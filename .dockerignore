@@ -1,0 +1,7 @@
+.git/
+.idea/
+.vscode/
+**/target/
+docs/CODEX_TODO_LIST.md
+*.iml
+*.log

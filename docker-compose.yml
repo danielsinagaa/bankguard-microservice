@@ -100,6 +100,125 @@ services:
     networks:
       - bankguard-network
 
+  transaction-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MODULE: transaction-service
+    container_name: bankguard-transaction-service
+    environment:
+      SERVICE_PORT: 8081
+      DB_URL: jdbc:postgresql://postgres:5432/bankguard
+      DB_USERNAME: bankguard
+      DB_PASSWORD: bankguard
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      JWT_SECRET: bankguard-local-development-secret-change-me
+    ports:
+      - "8081:8081"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8081/actuator/health | grep -q '\"status\":\"UP\"'"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+    networks:
+      - bankguard-network
+
+  risk-engine-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MODULE: risk-engine-service
+    container_name: bankguard-risk-engine-service
+    environment:
+      SERVICE_PORT: 8082
+      DB_URL: jdbc:postgresql://postgres:5432/bankguard
+      DB_USERNAME: bankguard
+      DB_PASSWORD: bankguard
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    ports:
+      - "8082:8082"
+    depends_on:
+      transaction-service:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8082/actuator/health | grep -q '\"status\":\"UP\"'"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+    networks:
+      - bankguard-network
+
+  audit-search-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MODULE: audit-search-service
+    container_name: bankguard-audit-search-service
+    environment:
+      SERVICE_PORT: 8083
+      DB_URL: jdbc:postgresql://postgres:5432/bankguard
+      DB_USERNAME: bankguard
+      DB_PASSWORD: bankguard
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      ELASTICSEARCH_URIS: http://elasticsearch:9200
+      JWT_SECRET: bankguard-local-development-secret-change-me
+    ports:
+      - "8083:8083"
+    depends_on:
+      transaction-service:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8083/actuator/health | grep -q '\"status\":\"UP\"'"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+    networks:
+      - bankguard-network
+
+  master-data-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MODULE: master-data-service
+    container_name: bankguard-master-data-service
+    environment:
+      SERVICE_PORT: 8084
+      DB_URL: jdbc:postgresql://postgres:5432/bankguard
+      DB_USERNAME: bankguard
+      DB_PASSWORD: bankguard
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_SECRET: bankguard-local-development-secret-change-me
+    ports:
+      - "8084:8084"
+    depends_on:
+      transaction-service:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8084/actuator/health | grep -q '\"status\":\"UP\"'"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+    networks:
+      - bankguard-network
+
 volumes:
   postgres-data:
   redis-data:

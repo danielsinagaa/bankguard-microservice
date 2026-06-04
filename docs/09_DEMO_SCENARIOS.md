@@ -1134,16 +1134,16 @@ Expected:
 {
   "data": [
     {
-      "riskBucket": "0-49",
-      "transactionCount": 1
+      "riskBucket": "LOW",
+      "totalTransactions": 1
     },
     {
-      "riskBucket": "50-79",
-      "transactionCount": 1
+      "riskBucket": "MEDIUM",
+      "totalTransactions": 1
     },
     {
-      "riskBucket": "80+",
-      "transactionCount": 1
+      "riskBucket": "HIGH",
+      "totalTransactions": 1
     }
   ]
 }
@@ -1154,7 +1154,7 @@ Expected:
 ### 13.5 Daily Top Risky Customers Report
 
 ```bash
-curl -X GET "http://localhost:8081/api/v1/reports/daily-top-risky-customers?startDate=2026-06-01&endDate=2026-06-30&limit=10" \
+curl -X GET "http://localhost:8081/api/v1/reports/daily-top-risky-customers?startDate=2026-06-01&endDate=2026-06-30&topN=10" \
   -H "Authorization: Bearer $ANALYST_TOKEN" \
   -H "X-Request-Id: demo-report-daily-top-risky"
 ```
