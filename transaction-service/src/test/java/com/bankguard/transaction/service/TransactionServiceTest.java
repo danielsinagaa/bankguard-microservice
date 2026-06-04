@@ -9,8 +9,8 @@ import static org.mockito.Mockito.when;
 
 import com.bankguard.common.constant.ErrorCode;
 import com.bankguard.common.event.EventEnvelope;
+import com.bankguard.common.event.TransactionCreatedPayload;
 import com.bankguard.common.exception.ApiException;
-import com.bankguard.transaction.dto.event.TransactionCreatedPayload;
 import com.bankguard.transaction.dto.request.SubmitTransactionRequest;
 import com.bankguard.transaction.entity.AccountEntity;
 import com.bankguard.transaction.entity.CustomerEntity;

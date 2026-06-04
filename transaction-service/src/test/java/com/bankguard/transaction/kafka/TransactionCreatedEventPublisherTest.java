@@ -9,7 +9,7 @@ import com.bankguard.common.constant.EventType;
 import com.bankguard.common.constant.KafkaTopics;
 import com.bankguard.common.event.EventEnvelope;
 import com.bankguard.common.event.EventEnvelopeFactory;
-import com.bankguard.transaction.dto.event.TransactionCreatedPayload;
+import com.bankguard.common.event.TransactionCreatedPayload;
 import com.bankguard.transaction.entity.AccountEntity;
 import com.bankguard.transaction.entity.CustomerEntity;
 import com.bankguard.transaction.entity.TransactionEntity;

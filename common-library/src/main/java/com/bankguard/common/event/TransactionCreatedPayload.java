@@ -1,4 +1,4 @@
-package com.bankguard.transaction.dto.event;
+package com.bankguard.common.event;
 
 import java.math.BigDecimal;
 import java.time.Instant;
