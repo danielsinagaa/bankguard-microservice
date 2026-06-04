@@ -25,7 +25,7 @@ mvn test
 
 ## Documentation
 
-The requirement and execution documents are in `docs/`:
+The requirement documents are in `docs/`:
 
 - `01_PRD.md`
 - `02_SYSTEM_DESIGN_ARCHITECTURE.md`
@@ -38,4 +38,3 @@ The requirement and execution documents are in `docs/`:
 - `09_DEMO_SCENARIOS.md`
 - `10_UNIT_TEST_REQUIREMENTS.md`
 - `11_TODO_LIST.md`
-- `CODEX_TODO_LIST.md`
