@@ -39,6 +39,9 @@ public class KafkaEventLogEntity {
     @Column(nullable = false, length = 30)
     private String status;
 
+    @Column(name = "error_message")
+    private String errorMessage;
+
     @Column(name = "retry_count", nullable = false)
     private int retryCount;
 
@@ -62,6 +65,22 @@ public class KafkaEventLogEntity {
             Instant createdAt,
             Instant processedAt
     ) {
+        this(eventId, eventType, aggregateId, topicName, consumerGroup, payload, status, null, 0, createdAt, processedAt);
+    }
+
+    public KafkaEventLogEntity(
+            String eventId,
+            String eventType,
+            String aggregateId,
+            String topicName,
+            String consumerGroup,
+            String payload,
+            String status,
+            String errorMessage,
+            int retryCount,
+            Instant createdAt,
+            Instant processedAt
+    ) {
         this.eventId = eventId;
         this.eventType = eventType;
         this.aggregateId = aggregateId;
@@ -69,8 +88,17 @@ public class KafkaEventLogEntity {
         this.consumerGroup = consumerGroup;
         this.payload = payload;
         this.status = status;
-        this.retryCount = 0;
+        this.errorMessage = errorMessage;
+        this.retryCount = retryCount;
         this.createdAt = createdAt;
         this.processedAt = processedAt;
+    }
+
+    public String getEventId() {
+        return eventId;
+    }
+
+    public String getStatus() {
+        return status;
     }
 }

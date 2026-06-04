@@ -25,12 +25,15 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class RiskContextLoader {
+    private static final Logger log = LoggerFactory.getLogger(RiskContextLoader.class);
     private static final Duration BLACKLIST_TTL = Duration.ofMinutes(10);
     private static final Duration BLACKLIST_NEGATIVE_TTL = Duration.ofMinutes(1);
     private static final Duration RISK_PROFILE_TTL = Duration.ofMinutes(5);
@@ -219,6 +222,7 @@ public class RiskContextLoader {
             return Optional.of(objectMapper.readValue(value, new TypeReference<>() {
             }));
         } catch (RuntimeException | java.io.IOException ex) {
+            log.warn("Redis cache read failed, key={}, fallback=postgresql, error={}", key, ex.getMessage());
             return Optional.empty();
         }
     }
@@ -227,7 +231,7 @@ public class RiskContextLoader {
         try {
             redisTemplate.opsForValue().set(key, objectMapper.writeValueAsString(value), ttl);
         } catch (RuntimeException | java.io.IOException ex) {
-            // Redis is an optimization for this lookup; PostgreSQL remains the fallback source of truth.
+            log.warn("Redis cache write failed, key={}, fallback=postgresql, error={}", key, ex.getMessage());
         }
     }
 

@@ -1,14 +1,13 @@
 package com.bankguard.auditsearch.consumer;
 
 import com.bankguard.auditsearch.service.AuditIndexingProcessor;
-import com.bankguard.common.constant.ErrorCode;
 import com.bankguard.common.constant.EventType;
 import com.bankguard.common.constant.KafkaTopics;
 import com.bankguard.common.constant.ProducerName;
 import com.bankguard.common.constant.RiskDecision;
 import com.bankguard.common.event.EventEnvelope;
 import com.bankguard.common.event.TransactionRiskScoredPayload;
-import com.bankguard.common.exception.ApiException;
+import com.bankguard.common.exception.InvalidKafkaEventException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
@@ -43,7 +42,7 @@ public class RiskScoredEventConsumer {
             return objectMapper.readValue(value, new TypeReference<>() {
             });
         } catch (Exception ex) {
-            throw new ApiException(400, ErrorCode.VALIDATION_ERROR, "Malformed transaction.risk-scored event");
+            throw new InvalidKafkaEventException("Malformed transaction.risk-scored event");
         }
     }
 
@@ -106,7 +105,7 @@ public class RiskScoredEventConsumer {
         }
     }
 
-    private ApiException validationError(String message) {
-        return new ApiException(400, ErrorCode.VALIDATION_ERROR, message);
+    private InvalidKafkaEventException validationError(String message) {
+        return new InvalidKafkaEventException(message);
     }
 }

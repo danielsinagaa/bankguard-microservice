@@ -1,13 +1,12 @@
 package com.bankguard.riskengine.consumer;
 
 import com.bankguard.common.constant.Channel;
-import com.bankguard.common.constant.ErrorCode;
 import com.bankguard.common.constant.EventType;
 import com.bankguard.common.constant.KafkaTopics;
 import com.bankguard.common.constant.ProducerName;
 import com.bankguard.common.event.EventEnvelope;
 import com.bankguard.common.event.TransactionCreatedPayload;
-import com.bankguard.common.exception.ApiException;
+import com.bankguard.common.exception.InvalidKafkaEventException;
 import com.bankguard.riskengine.service.RiskEngineProcessor;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -43,7 +42,7 @@ public class TransactionCreatedConsumer {
             return objectMapper.readValue(value, new TypeReference<>() {
             });
         } catch (Exception ex) {
-            throw new ApiException(400, ErrorCode.VALIDATION_ERROR, "Malformed transaction.created event");
+            throw new InvalidKafkaEventException("Malformed transaction.created event");
         }
     }
 
@@ -103,7 +102,7 @@ public class TransactionCreatedConsumer {
         }
     }
 
-    private ApiException validationError(String message) {
-        return new ApiException(400, ErrorCode.VALIDATION_ERROR, message);
+    private InvalidKafkaEventException validationError(String message) {
+        return new InvalidKafkaEventException(message);
     }
 }
