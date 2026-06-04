@@ -82,7 +82,7 @@ services:
       - bankguard-network
 
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    image: docker.elastic.co/elasticsearch/elasticsearch:9.2.8
     container_name: bankguard-elasticsearch
     environment:
       discovery.type: single-node
@@ -105,7 +105,7 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        MODULE: transaction-service
+        JAR_FILE: transaction-service/target/transaction-service-0.0.1-SNAPSHOT.jar
     container_name: bankguard-transaction-service
     environment:
       SERVICE_PORT: 8081
@@ -115,7 +115,7 @@ services:
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       JWT_SECRET: bankguard-local-development-secret-change-me
     ports:
-      - "8081:8081"
+      - "${TRANSACTION_HOST_PORT:-18081}:8081"
     depends_on:
       postgres:
         condition: service_healthy
@@ -134,7 +134,7 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        MODULE: risk-engine-service
+        JAR_FILE: risk-engine-service/target/risk-engine-service-0.0.1-SNAPSHOT.jar
     container_name: bankguard-risk-engine-service
     environment:
       SERVICE_PORT: 8082
@@ -145,7 +145,7 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
     ports:
-      - "8082:8082"
+      - "${RISK_ENGINE_HOST_PORT:-18082}:8082"
     depends_on:
       transaction-service:
         condition: service_healthy
@@ -164,7 +164,7 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        MODULE: audit-search-service
+        JAR_FILE: audit-search-service/target/audit-search-service-0.0.1-SNAPSHOT.jar
     container_name: bankguard-audit-search-service
     environment:
       SERVICE_PORT: 8083
@@ -175,7 +175,7 @@ services:
       ELASTICSEARCH_URIS: http://elasticsearch:9200
       JWT_SECRET: bankguard-local-development-secret-change-me
     ports:
-      - "8083:8083"
+      - "${AUDIT_SEARCH_HOST_PORT:-18083}:8083"
     depends_on:
       transaction-service:
         condition: service_healthy
@@ -194,7 +194,7 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        MODULE: master-data-service
+        JAR_FILE: master-data-service/target/master-data-service-0.0.1-SNAPSHOT.jar
     container_name: bankguard-master-data-service
     environment:
       SERVICE_PORT: 8084
@@ -205,7 +205,7 @@ services:
       REDIS_PORT: 6379
       JWT_SECRET: bankguard-local-development-secret-change-me
     ports:
-      - "8084:8084"
+      - "${MASTER_DATA_HOST_PORT:-18084}:8084"
     depends_on:
       transaction-service:
         condition: service_healthy

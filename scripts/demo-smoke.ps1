@@ -1,8 +1,8 @@
 param(
-    [string]$TransactionBaseUrl = "http://localhost:8081",
-    [string]$AuditBaseUrl = "http://localhost:8083",
-    [string]$MasterDataBaseUrl = "http://localhost:8084",
-    [string]$RiskEngineBaseUrl = "http://localhost:8082"
+    [string]$TransactionBaseUrl = "http://localhost:18081",
+    [string]$AuditBaseUrl = "http://localhost:18083",
+    [string]$MasterDataBaseUrl = "http://localhost:18084",
+    [string]$RiskEngineBaseUrl = "http://localhost:18082"
 )
 
 $ErrorActionPreference = "Stop"
@@ -111,13 +111,20 @@ function Wait-TransactionDecision {
             "X-Request-Id" = "demo-detail-$RunId"
         }
         if ($detail.riskDecision -eq $ExpectedDecision) {
-            if ($ExpectedFactor -and (($detail.riskFactors | ForEach-Object { $_.code }) -notcontains $ExpectedFactor)) {
-                throw "Transaction $TransactionRef reached $ExpectedDecision without expected factor $ExpectedFactor"
+            if ($ExpectedFactor) {
+                if (($detail.riskFactors | ForEach-Object { $_.code }) -contains $ExpectedFactor) {
+                    Write-Host "DECISION $TransactionRef $ExpectedDecision score=$($detail.riskScore)"
+                    return $detail
+                }
+            } else {
+                Write-Host "DECISION $TransactionRef $ExpectedDecision score=$($detail.riskScore)"
+                return $detail
             }
-            Write-Host "DECISION $TransactionRef $ExpectedDecision score=$($detail.riskScore)"
-            return $detail
         }
         Start-Sleep -Seconds 2
+    }
+    if ($ExpectedFactor) {
+        throw "Transaction $TransactionRef did not reach $ExpectedDecision with expected factor $ExpectedFactor"
     }
     throw "Transaction $TransactionRef did not reach $ExpectedDecision"
 }
@@ -157,10 +164,16 @@ function Invoke-Report {
     Write-Host "REPORT $Path total=$($response.total)"
 }
 
+function Reset-DemoVelocityCounters {
+    docker exec bankguard-redis redis-cli DEL risk:velocity:count:1234567890:10m risk:velocity:amount:1234567890:10m | Out-Null
+    Write-Host "REDIS velocity counters reset"
+}
+
 Wait-Health -Name "transaction-service" -Url $TransactionBaseUrl
 Wait-Health -Name "risk-engine-service" -Url $RiskEngineBaseUrl
 Wait-Health -Name "audit-search-service" -Url $AuditBaseUrl
 Wait-Health -Name "master-data-service" -Url $MasterDataBaseUrl
+Reset-DemoVelocityCounters
 
 $AdminToken = Login -Username "admin" -Password "admin123" -ExpectedRole "ROLE_ADMIN"
 $BackofficeToken = Login -Username "backoffice" -Password "backoffice123" -ExpectedRole "ROLE_BACKOFFICE"
@@ -210,7 +223,7 @@ for ($i = 1; $i -le 5; $i++) {
         -DeviceId "DEVICE-TRUSTED-001" `
         -Location "Jakarta"
 }
-Wait-TransactionDecision -Token $BackofficeToken -TransactionRef $LastVelocityRef -ExpectedDecision "APPROVED" -ExpectedFactor "HIGH_FREQUENCY_TRANSACTION_COUNT" | Out-Null
+Wait-TransactionDecision -Token $BackofficeToken -TransactionRef $LastVelocityRef -ExpectedDecision "APPROVED" -ExpectedFactor "HIGH_FREQUENCY_TRANSACTION" | Out-Null
 
 docker exec bankguard-redis redis-cli GET risk:velocity:count:1234567890:10m
 docker exec bankguard-redis redis-cli GET risk:velocity:amount:1234567890:10m

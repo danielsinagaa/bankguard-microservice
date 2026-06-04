@@ -105,10 +105,10 @@ The following services must be running before the demo:
 
 | Component | Purpose | Expected Port |
 |---|---|---:|
-| Transaction Service | Authentication, transaction API, reporting API | 8081 |
-| Risk Engine Service | Kafka consumer and fraud scoring | internal |
-| Audit Search Service | Audit search API and Elasticsearch indexing | 8083 |
-| Master Data Service | Blacklist, trusted device, risk profile, rule config APIs | 8084 |
+| Transaction Service | Authentication, transaction API, reporting API | 18081 |
+| Risk Engine Service | Kafka consumer and fraud scoring | 18082 |
+| Audit Search Service | Audit search API and Elasticsearch indexing | 18083 |
+| Master Data Service | Blacklist, trusted device, risk profile, rule config APIs | 18084 |
 | PostgreSQL | Source of truth | 5432 |
 | Kafka | Event streaming | 9092 |
 | Redis | Cache and velocity counters | 6379 |
@@ -121,7 +121,8 @@ The following services must be running before the demo:
 From the project root:
 
 ```bash
-docker compose up -d
+mvn clean package
+docker compose up -d --build
 ```
 
 ---
@@ -150,9 +151,10 @@ master-data-service   running
 ### 2.4 Verify Service Health
 
 ```bash
-curl http://localhost:8081/actuator/health
-curl http://localhost:8083/actuator/health
-curl http://localhost:8084/actuator/health
+curl http://localhost:18081/actuator/health
+curl http://localhost:18082/actuator/health
+curl http://localhost:18083/actuator/health
+curl http://localhost:18084/actuator/health
 ```
 
 Expected response:
@@ -180,7 +182,7 @@ Expected response:
 ### 3.2 Login as Admin
 
 ```bash
-curl -X POST http://localhost:8081/api/v1/auth/login \
+curl -X POST http://localhost:18081/api/v1/auth/login \
   -H "Content-Type: application/json" \
   -H "X-Request-Id: demo-login-admin" \
   -d '{
@@ -213,7 +215,7 @@ export ADMIN_TOKEN=<jwt>
 ### 3.3 Login as Back Office
 
 ```bash
-curl -X POST http://localhost:8081/api/v1/auth/login \
+curl -X POST http://localhost:18081/api/v1/auth/login \
   -H "Content-Type: application/json" \
   -H "X-Request-Id: demo-login-backoffice" \
   -d '{
@@ -233,7 +235,7 @@ export BACKOFFICE_TOKEN=<jwt>
 ### 3.4 Login as Fraud Analyst
 
 ```bash
-curl -X POST http://localhost:8081/api/v1/auth/login \
+curl -X POST http://localhost:18081/api/v1/auth/login \
   -H "Content-Type: application/json" \
   -H "X-Request-Id: demo-login-analyst" \
   -d '{
@@ -323,7 +325,7 @@ Prove that the API enforces role-based access control.
 ### 5.2 Fraud Analyst Attempts to Submit Transaction
 
 ```bash
-curl -X POST http://localhost:8081/api/v1/transactions \
+curl -X POST http://localhost:18081/api/v1/transactions \
   -H "Authorization: Bearer $ANALYST_TOKEN" \
   -H "Idempotency-Key: demo-auth-001" \
   -H "Content-Type: application/json" \
@@ -372,7 +374,7 @@ This scenario should trigger no risk factors or only low-risk behavior, resultin
 ### 6.2 Submit Transaction
 
 ```bash
-curl -X POST http://localhost:8081/api/v1/transactions \
+curl -X POST http://localhost:18081/api/v1/transactions \
   -H "Authorization: Bearer $BACKOFFICE_TOKEN" \
   -H "Idempotency-Key: demo-low-risk-001" \
   -H "Content-Type: application/json" \
@@ -448,7 +450,7 @@ fraud audit document indexed
 ### 6.4 Retrieve Transaction Detail
 
 ```bash
-curl -X GET http://localhost:8081/api/v1/transactions/TRX-20260604-000001 \
+curl -X GET http://localhost:18081/api/v1/transactions/TRX-20260604-000001 \
   -H "Authorization: Bearer $BACKOFFICE_TOKEN" \
   -H "X-Request-Id: demo-low-risk-detail"
 ```
@@ -497,7 +499,7 @@ Prove duplicate transaction submission is prevented using `Idempotency-Key`.
 Use the same `Idempotency-Key` from Demo Scenario 2:
 
 ```bash
-curl -X POST http://localhost:8081/api/v1/transactions \
+curl -X POST http://localhost:18081/api/v1/transactions \
   -H "Authorization: Bearer $BACKOFFICE_TOKEN" \
   -H "Idempotency-Key: demo-low-risk-001" \
   -H "Content-Type: application/json" \
@@ -561,7 +563,7 @@ Prove that the `HIGH_AMOUNT` rule is triggered and produces a `REVIEW` decision 
 ### 8.2 Submit High Amount Transaction
 
 ```bash
-curl -X POST http://localhost:8081/api/v1/transactions \
+curl -X POST http://localhost:18081/api/v1/transactions \
   -H "Authorization: Bearer $BACKOFFICE_TOKEN" \
   -H "Idempotency-Key: demo-high-amount-001" \
   -H "Content-Type: application/json" \
@@ -608,7 +610,7 @@ To demonstrate `REVIEW`, combine high amount with another medium factor such as 
 ### 8.4 Submit High Amount + New Device Transaction
 
 ```bash
-curl -X POST http://localhost:8081/api/v1/transactions \
+curl -X POST http://localhost:18081/api/v1/transactions \
   -H "Authorization: Bearer $BACKOFFICE_TOKEN" \
   -H "Idempotency-Key: demo-review-001" \
   -H "Content-Type: application/json" \
@@ -666,7 +668,7 @@ Total score:
 ### 8.5 Submit Guaranteed Review Transaction
 
 ```bash
-curl -X POST http://localhost:8081/api/v1/transactions \
+curl -X POST http://localhost:18081/api/v1/transactions \
   -H "Authorization: Bearer $BACKOFFICE_TOKEN" \
   -H "Idempotency-Key: demo-review-guaranteed-001" \
   -H "Content-Type: application/json" \
@@ -730,7 +732,7 @@ Prove that a transaction to an active blacklisted account is detected and can be
 ### 9.2 Submit Transaction to Blacklisted Destination
 
 ```bash
-curl -X POST http://localhost:8081/api/v1/transactions \
+curl -X POST http://localhost:18081/api/v1/transactions \
   -H "Authorization: Bearer $BACKOFFICE_TOKEN" \
   -H "Idempotency-Key: demo-blocked-001" \
   -H "Content-Type: application/json" \
@@ -832,7 +834,7 @@ Run several requests using different idempotency keys:
 
 ```bash
 for i in 1 2 3 4 5 6; do
-  curl -X POST http://localhost:8081/api/v1/transactions \
+  curl -X POST http://localhost:18081/api/v1/transactions \
     -H "Authorization: Bearer $BACKOFFICE_TOKEN" \
     -H "Idempotency-Key: demo-velocity-$i" \
     -H "Content-Type: application/json" \
@@ -904,7 +906,7 @@ Prove that Master Data Service invalidates Redis cache after risk-sensitive mast
 ### 11.2 Create New Blacklisted Account
 
 ```bash
-curl -X POST http://localhost:8084/api/v1/blacklisted-accounts \
+curl -X POST http://localhost:18084/api/v1/blacklisted-accounts \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -H "X-Request-Id: demo-blacklist-create-001" \
@@ -938,7 +940,7 @@ The next Risk Engine lookup should reload this value from PostgreSQL and repopul
 ### 11.4 Submit Transaction to Newly Blacklisted Account
 
 ```bash
-curl -X POST http://localhost:8081/api/v1/transactions \
+curl -X POST http://localhost:18081/api/v1/transactions \
   -H "Authorization: Bearer $BACKOFFICE_TOKEN" \
   -H "Idempotency-Key: demo-new-blacklist-001" \
   -H "Content-Type: application/json" \
@@ -986,7 +988,7 @@ Prove that scored transactions are searchable through Elasticsearch.
 ### 12.2 Search Review Transactions
 
 ```bash
-curl -X GET "http://localhost:8083/api/v1/audits/search?decision=REVIEW&minimumRiskScore=50&page=0&size=20" \
+curl -X GET "http://localhost:18083/api/v1/audits/search?decision=REVIEW&minimumRiskScore=50&page=0&size=20" \
   -H "Authorization: Bearer $ANALYST_TOKEN" \
   -H "X-Request-Id: demo-audit-review-search"
 ```
@@ -1022,7 +1024,7 @@ Expected response:
 ### 12.3 Search Blocked Transactions
 
 ```bash
-curl -X GET "http://localhost:8083/api/v1/audits/search?decision=BLOCKED&page=0&size=20" \
+curl -X GET "http://localhost:18083/api/v1/audits/search?decision=BLOCKED&page=0&size=20" \
   -H "Authorization: Bearer $ANALYST_TOKEN" \
   -H "X-Request-Id: demo-audit-blocked-search"
 ```
@@ -1047,7 +1049,7 @@ Expected:
 ### 12.4 Keyword Search
 
 ```bash
-curl -X GET "http://localhost:8083/api/v1/audits/search?keyword=Surabaya&page=0&size=20" \
+curl -X GET "http://localhost:18083/api/v1/audits/search?keyword=Surabaya&page=0&size=20" \
   -H "Authorization: Bearer $ANALYST_TOKEN" \
   -H "X-Request-Id: demo-audit-keyword-search"
 ```
@@ -1081,7 +1083,7 @@ Prove that Transaction Service provides analytical reports using native SQL.
 ### 13.2 High-Risk Transactions Report
 
 ```bash
-curl -X GET "http://localhost:8081/api/v1/reports/high-risk-transactions?minimumRiskScore=50&startDate=2026-06-01&endDate=2026-06-30&page=0&size=20" \
+curl -X GET "http://localhost:18081/api/v1/reports/high-risk-transactions?minimumRiskScore=50&startDate=2026-06-01&endDate=2026-06-30&page=0&size=20" \
   -H "Authorization: Bearer $ANALYST_TOKEN" \
   -H "X-Request-Id: demo-report-high-risk"
 ```
@@ -1107,7 +1109,7 @@ Expected:
 ### 13.3 Transaction Velocity Report
 
 ```bash
-curl -X GET "http://localhost:8081/api/v1/reports/transaction-velocity?startDate=2026-06-01&endDate=2026-06-30&minimumCount=5&page=0&size=20" \
+curl -X GET "http://localhost:18081/api/v1/reports/transaction-velocity?startDate=2026-06-01&endDate=2026-06-30&minimumCount=5&page=0&size=20" \
   -H "Authorization: Bearer $ANALYST_TOKEN" \
   -H "X-Request-Id: demo-report-velocity"
 ```
@@ -1123,7 +1125,7 @@ Source account 123****890 appears with transaction count above threshold.
 ### 13.4 Risk Score Distribution Report
 
 ```bash
-curl -X GET "http://localhost:8081/api/v1/reports/risk-score-distribution?startDate=2026-06-01&endDate=2026-06-30" \
+curl -X GET "http://localhost:18081/api/v1/reports/risk-score-distribution?startDate=2026-06-01&endDate=2026-06-30" \
   -H "Authorization: Bearer $ANALYST_TOKEN" \
   -H "X-Request-Id: demo-report-distribution"
 ```
@@ -1154,7 +1156,7 @@ Expected:
 ### 13.5 Daily Top Risky Customers Report
 
 ```bash
-curl -X GET "http://localhost:8081/api/v1/reports/daily-top-risky-customers?startDate=2026-06-01&endDate=2026-06-30&topN=10" \
+curl -X GET "http://localhost:18081/api/v1/reports/daily-top-risky-customers?startDate=2026-06-01&endDate=2026-06-30&topN=10" \
   -H "Authorization: Bearer $ANALYST_TOKEN" \
   -H "X-Request-Id: demo-report-daily-top-risky"
 ```
@@ -1316,7 +1318,7 @@ docker compose stop redis
 ### 16.3 Submit Transaction to Blacklisted Account
 
 ```bash
-curl -X POST http://localhost:8081/api/v1/transactions \
+curl -X POST http://localhost:18081/api/v1/transactions \
   -H "Authorization: Bearer $BACKOFFICE_TOKEN" \
   -H "Idempotency-Key: demo-redis-down-001" \
   -H "Content-Type: application/json" \
@@ -1438,9 +1440,10 @@ Verify all service health endpoints and dependency visibility.
 ### 18.2 Commands
 
 ```bash
-curl http://localhost:8081/actuator/health
-curl http://localhost:8083/actuator/health
-curl http://localhost:8084/actuator/health
+curl http://localhost:18081/actuator/health
+curl http://localhost:18082/actuator/health
+curl http://localhost:18083/actuator/health
+curl http://localhost:18084/actuator/health
 ```
 
 Expected:

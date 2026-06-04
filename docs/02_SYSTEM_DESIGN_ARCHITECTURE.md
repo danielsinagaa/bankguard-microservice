@@ -1639,29 +1639,45 @@ services:
     image: confluentinc/cp-kafka
 
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    image: docker.elastic.co/elasticsearch/elasticsearch:9.2.8
 
   transaction-service:
-    build: ./transaction-service
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        JAR_FILE: transaction-service/target/transaction-service-0.0.1-SNAPSHOT.jar
     depends_on:
       - postgres
       - kafka
 
   risk-engine-service:
-    build: ./risk-engine-service
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        JAR_FILE: risk-engine-service/target/risk-engine-service-0.0.1-SNAPSHOT.jar
     depends_on:
       - postgres
       - kafka
       - redis
 
   audit-search-service:
-    build: ./audit-search-service
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        JAR_FILE: audit-search-service/target/audit-search-service-0.0.1-SNAPSHOT.jar
     depends_on:
       - kafka
       - elasticsearch
 
   master-data-service:
-    build: ./master-data-service
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        JAR_FILE: master-data-service/target/master-data-service-0.0.1-SNAPSHOT.jar
     depends_on:
       - postgres
       - redis

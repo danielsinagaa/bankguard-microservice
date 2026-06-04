@@ -54,11 +54,13 @@ Each service runs independently.
 Local development examples:
 
 ```text
-Transaction Service     http://localhost:8081
+Transaction Service     http://localhost:18081
 Risk Engine Service     internal Kafka consumer only
-Audit Search Service    http://localhost:8083
-Master Data Service     http://localhost:8084
+Audit Search Service    http://localhost:18083
+Master Data Service     http://localhost:18084
 ```
+
+Docker Compose keeps the internal service ports as `8081` to `8084`, but maps host ports to `18081` to `18084` by default to avoid common local port reservations.
 
 All public API paths must start with:
 

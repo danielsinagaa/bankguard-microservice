@@ -531,7 +531,8 @@ risk-rule:config:{ruleCode}
 
 ```text
 risk-rule:config:HIGH_AMOUNT
-risk-rule:config:HIGH_FREQUENCY_TRANSACTION
+risk-rule:config:HIGH_FREQUENCY_TRANSACTION_COUNT
+risk-rule:config:HIGH_FREQUENCY_TRANSACTION_AMOUNT
 ```
 
 ### Purpose
@@ -598,7 +599,8 @@ Rule configuration may be updated by administrators. A short TTL allows configur
 HIGH_AMOUNT
 NEW_DEVICE
 BLACKLISTED_DESTINATION
-HIGH_FREQUENCY_TRANSACTION
+HIGH_FREQUENCY_TRANSACTION_COUNT
+HIGH_FREQUENCY_TRANSACTION_AMOUNT
 UNUSUAL_LOCATION
 HIGH_RISK_CUSTOMER_PROFILE
 ```
@@ -918,7 +920,7 @@ This is acceptable for MVP because TTL is short.
 | `HIGH_AMOUNT` | Risk rule config cache | `risk-rule:config:HIGH_AMOUNT` |
 | `NEW_DEVICE` | Trusted device cache and rule config cache | `customer:trusted-device:{customerId}:{deviceId}`, `risk-rule:config:NEW_DEVICE` |
 | `BLACKLISTED_DESTINATION` | Blacklisted account cache and rule config cache | `blacklist:account:{destinationAccountNumber}`, `risk-rule:config:BLACKLISTED_DESTINATION` |
-| `HIGH_FREQUENCY_TRANSACTION` | Velocity counters and rule config cache | `risk:velocity:count:{sourceAccountNumber}:10m`, `risk:velocity:amount:{sourceAccountNumber}:10m`, `risk-rule:config:HIGH_FREQUENCY_TRANSACTION` |
+| `HIGH_FREQUENCY_TRANSACTION` | Velocity counters and rule config cache | `risk:velocity:count:{sourceAccountNumber}:10m`, `risk:velocity:amount:{sourceAccountNumber}:10m`, `risk-rule:config:HIGH_FREQUENCY_TRANSACTION_COUNT`, `risk-rule:config:HIGH_FREQUENCY_TRANSACTION_AMOUNT` |
 | `UNUSUAL_LOCATION` | Rule config cache; known location is read from PostgreSQL for MVP | `risk-rule:config:UNUSUAL_LOCATION` |
 | `HIGH_RISK_CUSTOMER_PROFILE` | Customer risk profile cache and rule config cache | `customer:risk-profile:{customerId}`, `risk-rule:config:HIGH_RISK_CUSTOMER_PROFILE` |
 

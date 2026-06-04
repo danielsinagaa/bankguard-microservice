@@ -1,7 +1,8 @@
 .git/
 .idea/
 .vscode/
-**/target/
+**/target/*
+!**/target/*.jar
 docs/CODEX_TODO_LIST.md
 *.iml
 *.log
